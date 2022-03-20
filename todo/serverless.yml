@@ -1,0 +1,90 @@
+service: todo
+
+frameworkVersion: '3'
+
+provider:
+  name: aws
+  runtime: python3.8
+  stage: dev
+  region: us-west-2
+
+  environment:
+    TABLE_NAME: ${self:custom.postsTableName}
+
+
+  # resource definition for the database
+resources:
+  Resources:
+    PostsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:custom.postsTableName}
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+
+custom:
+  postsTableName: user${self:provider.stage}
+  dynamodb:
+    stages:
+      - dev
+    start:
+      port: 8000
+      migrate: true
+      sharedb: true
+      accessKeyId: access_key
+      secretAccessKey: secret_access_key
+  serverless-offline:
+    resourceRoutes: true
+
+plugins:
+  - serverless-offline
+  - serverless-dynamodb-local
+
+functions:
+  create:
+    handler: handler.create
+    events:
+      - http:
+          path: todo
+          method: post
+          cors: true
+
+  list:
+    handler: handler.list
+    events:
+      - http:
+          path: todo
+          method: get
+          cors: true
+
+  get:
+    handler: handler.get
+    events:
+      - http:
+          path: todo/{id}
+          method: get
+          cors: true
+
+  update:
+    handler: handler.update
+    events:
+      - http:
+          path: todo/{id}
+          method: put
+          cors: true
+
+  delete:
+    handler: handler.delete
+    events:
+      - http:
+          path: todo/{id}
+          method: delete
+          cors: true
+
